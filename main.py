@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 
-from frames import ConfigurationFrame, AxisSelectorFrame
+from frames import DataPathSelectionFrame, PlotConfigurationFrame, PlotVisualizationFrame
 
 # Basic properties
 WINDOW_WIDTH = 1200
@@ -27,19 +27,55 @@ class App(tk.Tk):
         # Configure icon
         self.iconbitmap('./assets/icon.ico')
 
-        self.create_widgets()
+        # Global variables
+        self.config = {'axis_type':         'wavelength',
+                       'exc_wavelength':    '561',
+                       'plot_title':        'Spectrum',
+                       }
+
+        self.create_subframes()
+        self.update_plot()
 
 
-    def create_widgets(self):
+    def callback(self, var, index, mode):
 
-        frame = ConfigurationFrame(self)
-        frame.pack()
+        # Called whenever a variable is changed.
+
+        self.config['axis_type'] = self.plotconfig_frame.get_axis_type()
+        self.update_plot()
+        return True
+
+    def create_subframes(self):
+
+        # Basic subroutine to instantiate each of the subframes.
+
+        datapath_frame = DataPathSelectionFrame(self)
+        datapath_frame.pack()
+
+        self.plotconfig_frame = PlotConfigurationFrame(self)
+        self.plotconfig_frame.pack()
+
+        self.plot_frame = PlotVisualizationFrame(self)
+        self.plot_frame.pack()
+
+        testbutton = ttk.Button(self, text='test', command=lambda: print(self.plotconfig_frame.get_axis_type()))
+        testbutton.pack()
+
+
+    def update_plot(self):
+
+        # Update the plot in the PlotVisualiationFrame.
+
+        self.plot_frame.update_plot(self.config)
 
 
 if __name__ == '__main__':
+
     app = App()
+
     try:
         from ctypes import windll
         windll.shcore.SetProcessDpiAwareness(1)
+        
     finally:
         app.mainloop()
