@@ -13,11 +13,13 @@ from matplotlib.backends.backend_tkagg import (
     NavigationToolbar2Tk
 )
 
+import pandas as pd
+
 class DataPathSelectionFrame(ttk.Frame):
 
     # Contains 2 selection boxes to choose rawdata path and background path.
 
-    def __init__(self, container):
+    def __init__(self, container, load_data_callback):
 
         super().__init__(container)
 
@@ -56,7 +58,7 @@ class DataPathSelectionFrame(ttk.Frame):
         # Load into memory button
         fr = ttk.Frame(self)
         fr.grid(column=3, row=0, rowspan=2, **options)
-        load_button = ttk.Button(fr, text='\nLoad\n')
+        load_button = ttk.Button(fr, text='\nLoad\n', command=lambda: load_data_callback(self.rawdata_path.get(), self.background_path.get()))
         load_button.pack()#.grid(column=3, row=0, rowspan=2, **options)
 
 
@@ -166,9 +168,11 @@ class PlotVisualizationFrame(tk.Frame):
         self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 
-    def update_plot(self, config):
+    def update_plot(self, config, df):
         
         # Called when a variable is changed, or when instantiated. 'config' is expected to be the global config variable from the root window.
+
+        self.axes.clear()
 
         # Set title
         self.axes.set_title(config['plot_title'])
@@ -178,6 +182,8 @@ class PlotVisualizationFrame(tk.Frame):
         elif config['axis_type'] == 'energy': self.axes.set_xlabel('Energy (eV)')
         elif config['axis_type'] == 'ramanshift': self.axes.set_xlabel('Raman shift (cm⁻¹)')
         else: self.axes.set_xlabel('This isnt supposed to be here')
+        
+        self.axes.plot(df)
 
         self.figure_canvas.draw_idle()
         self.figure_canvas.flush_events()

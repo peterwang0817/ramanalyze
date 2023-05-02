@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 
 from frames import DataPathSelectionFrame, PlotConfigurationFrame, PlotVisualizationFrame
+import pandas as pd
 
 # Basic properties
 WINDOW_WIDTH = 1200
@@ -32,6 +33,7 @@ class App(tk.Tk):
                        'exc_wavelength':    '561',
                        'plot_title':        'Spectrum',
                        }
+        self.df = pd.DataFrame()
 
         self.create_subframes()
         self.update_plot()
@@ -44,12 +46,35 @@ class App(tk.Tk):
         self.config['axis_type'] = self.plotconfig_frame.get_axis_type()
         self.update_plot()
         return True
+    
+
+    def load_data(self, rawdata_path, background_path):
+
+        # Called whenever the load button is pressed.
+        self.df = pd.DataFrame(columns=self.df.columns) # clear the dataframe
+        
+        # Load background data into dataframe
+        try:
+            self.df['background'] = pd.read_table(background_path, header=None, nrows=2000, index_col=0)
+        except:
+            raise FileNotFoundError
+
+        # Load rest of data into dataframe
+        for full_path in rawdata_path.split(' '):
+            short_path = full_path.split('/')[-1]
+            try:
+                self.df[short_path] = pd.read_table(full_path, header=None, nrows=2000, index_col=0)
+            except:
+                raise FileNotFoundError
+
+        self.update_plot()
+
 
     def create_subframes(self):
 
         # Basic subroutine to instantiate each of the subframes.
 
-        datapath_frame = DataPathSelectionFrame(self)
+        datapath_frame = DataPathSelectionFrame(self, self.load_data)
         datapath_frame.pack()
 
         self.plotconfig_frame = PlotConfigurationFrame(self)
@@ -66,7 +91,7 @@ class App(tk.Tk):
 
         # Update the plot in the PlotVisualiationFrame.
 
-        self.plot_frame.update_plot(self.config)
+        self.plot_frame.update_plot(self.config, self.df)
 
 
 if __name__ == '__main__':
