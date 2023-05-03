@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 
 from frames import DataPathSelectionFrame, PlotConfigurationFrame, PlotVisualizationFrame
-import pandas as pd
+import numpy as np
 
 # Basic properties
 WINDOW_WIDTH = 1200
@@ -33,7 +33,7 @@ class App(tk.Tk):
                        'exc_wavelength':    '561',
                        'plot_title':        'Spectrum',
                        }
-        self.df = pd.DataFrame()
+        self.df = []
 
         self.create_subframes()
         self.update_plot()
@@ -51,21 +51,23 @@ class App(tk.Tk):
     def load_data(self, rawdata_path, background_path):
 
         # Called whenever the load button is pressed.
-        self.df = pd.DataFrame(columns=self.df.columns) # clear the dataframe
+        self.df = []#pd.DataFrame(columns=self.df.columns) # clear the dataframe
         
         # Load background data into dataframe
         try:
-            self.df['background'] = pd.read_table(background_path, header=None, nrows=2000, index_col=0)
+            self.df.append(np.loadtxt(background_path, max_rows=2000))#['background'] = np.loadtxt(background_path, max_rows=2000)
         except:
             raise FileNotFoundError
+        # TODO: popup dialog
 
         # Load rest of data into dataframe
         for full_path in rawdata_path.split(' '):
             short_path = full_path.split('/')[-1]
             try:
-                self.df[short_path] = pd.read_table(full_path, header=None, nrows=2000, index_col=0)
+                self.df.append(np.loadtxt(full_path, max_rows=2000))#[short_path] = np.loadtxt(full_path, max_rows=2000)
             except:
                 raise FileNotFoundError
+        # TODO: popup dialog
 
         self.update_plot()
 
@@ -75,16 +77,16 @@ class App(tk.Tk):
         # Basic subroutine to instantiate each of the subframes.
 
         datapath_frame = DataPathSelectionFrame(self, self.load_data)
-        datapath_frame.pack()
+        datapath_frame.grid(column=0, row=0)
 
         self.plotconfig_frame = PlotConfigurationFrame(self)
-        self.plotconfig_frame.pack()
+        self.plotconfig_frame.grid(column=0, row=1)
 
         self.plot_frame = PlotVisualizationFrame(self)
-        self.plot_frame.pack()
+        self.plot_frame.grid(column=0, row=2, sticky=tk.W)
 
         testbutton = ttk.Button(self, text='test', command=lambda: print(self.plotconfig_frame.get_axis_type()))
-        testbutton.pack()
+        testbutton.grid(column=1, row=3, sticky=tk.E)
 
 
     def update_plot(self):

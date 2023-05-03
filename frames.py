@@ -13,7 +13,9 @@ from matplotlib.backends.backend_tkagg import (
     NavigationToolbar2Tk
 )
 
-import pandas as pd
+import numpy as np
+
+HC = 1239.841930092394
 
 class DataPathSelectionFrame(ttk.Frame):
 
@@ -160,7 +162,7 @@ class PlotVisualizationFrame(tk.Frame):
 
         super().__init__(container)
 
-        self.figure = Figure(figsize=(5, 4), dpi=100)
+        self.figure = Figure(figsize=(5, 4), dpi=120)
         self.figure_canvas = FigureCanvasTkAgg(self.figure, self)
         NavigationToolbar2Tk(self.figure_canvas, self)
         self.axes = self.figure.add_subplot()
@@ -183,7 +185,17 @@ class PlotVisualizationFrame(tk.Frame):
         elif config['axis_type'] == 'ramanshift': self.axes.set_xlabel('Raman shift (cm⁻¹)')
         else: self.axes.set_xlabel('This isnt supposed to be here')
         
-        self.axes.plot(df)
+        if len(df) > 0:
+            
+            x_axis = df[0][:,0]
+            if config['axis_type'] == 'energy':
+                x_axis = np.reciprocal(x_axis) * HC
+            elif config['axis_type'] == 'ramanshift':
+                x_axis = 1E7 * (1.0 / float(config['exc_wavelength']) - np.reciprocal(x_axis))
+
+            for i, v in enumerate(df[1:]):
+                self.axes.plot(x_axis, v[:,1])# - df[0][:,1])
+
 
         self.figure_canvas.draw_idle()
         self.figure_canvas.flush_events()
