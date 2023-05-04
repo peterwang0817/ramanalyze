@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 
-from frames import DataPathSelectionFrame, PlotConfigurationFrame, PlotVisualizationFrame
+from frames import DataPathSelectionFrame, PlotConfigurationFrame, PlotVisualizationFrame, FitOverviewFrame
 import numpy as np
 
 # Basic properties
@@ -87,6 +87,9 @@ class App(tk.Tk):
 
         testbutton = ttk.Button(self, text='test', command=lambda: print(self.plotconfig_frame.get_axis_type()))
         testbutton.grid(column=1, row=3, sticky=tk.E)
+
+        aaa = FitOverviewFrame(self)
+        aaa.grid(column=0, row=4)
 
 
     def update_plot(self):

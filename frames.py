@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
-from tkinter import StringVar
+from tkinter import StringVar, DoubleVar
 
 import matplotlib
 
@@ -14,6 +14,8 @@ from matplotlib.backends.backend_tkagg import (
 )
 
 import numpy as np
+from classes import Series
+from curves import gaussian, lorentzian, voigt
 
 HC = 1239.841930092394
 
@@ -195,9 +197,62 @@ class PlotVisualizationFrame(tk.Frame):
 
             for i, v in enumerate(df[1:]):
                 self.axes.plot(x_axis, v[:,1])# - df[0][:,1])
+                foo = Series('1', x_axis, v[:,1], None, 'blue')
+                #bar = foo.fit(gaussian)
+                #self.axes.plot(x_axis, bar.ydata)
 
 
         self.figure_canvas.draw_idle()
         self.figure_canvas.flush_events()
         # I don't know how to use matplotlib
 
+
+class FitParameterFrame(tk.Frame):
+
+    def __init__(self, container):
+
+        super().__init__(container)
+
+        self.a = DoubleVar()
+        self.b = DoubleVar()
+        self.c = DoubleVar()
+
+        a_label = ttk.Label(self, text='a')
+        a_label.grid(column=0)
+        a_entry = ttk.Entry(self, textvariable=self.a)
+        a_entry.grid(column=1)
+
+        b_label = ttk.Label(self, text='b')
+        b_label.grid(column=2)
+        b_entry = ttk.Entry(self, textvariable=self.b)
+        b_entry.grid(column=3)
+
+        c_label = ttk.Label(self, text='c')
+        c_label.grid(column=4)
+        c_entry = ttk.Entry(self, textvariable=self.c)
+        c_entry.grid(column=5)
+
+    def get_params(self):
+
+        return (self.a.get(), self.b.get(), self.c.get())
+    
+
+class FitOverviewFrame(tk.Frame):
+
+    def __init__(self, container):
+
+        super().__init__(container)
+
+        butt = ttk.Button(self, text='AAAA', command=self.on_pressed)
+        butt.pack()
+
+        self.test = ttk.Treeview(self, columns=('name', 'a', 'b', 'c'), show='headings')
+        self.test.heading('name', text='Name')
+        self.test.heading('a', text='a')
+        self.test.heading('b', text='b')
+        self.test.heading('c', text='c')
+        self.test.pack()
+
+    def on_pressed(self):
+
+        self.test.insert('', tk.END, values=('new', '0', '0', '0'))
