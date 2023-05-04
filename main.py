@@ -34,6 +34,7 @@ class App(tk.Tk):
                        'plot_title':        'Spectrum',
                        }
         self.df = []
+        self.target_func = None
 
         self.create_subframes()
         self.update_plot()
@@ -64,10 +65,13 @@ class App(tk.Tk):
         for full_path in rawdata_path.split(' '):
             short_path = full_path.split('/')[-1]
             try:
+                read = np.loadtxt(full_path, max_rows=2000)
                 self.df.append(np.loadtxt(full_path, max_rows=2000))#[short_path] = np.loadtxt(full_path, max_rows=2000)
             except:
                 raise FileNotFoundError
         # TODO: popup dialog
+        for i in range(1, len(self.df)):
+            self.df[i][:,1] -= self.df[0][:,1]
 
         self.update_plot()
 
@@ -77,26 +81,23 @@ class App(tk.Tk):
         # Basic subroutine to instantiate each of the subframes.
 
         datapath_frame = DataPathSelectionFrame(self, self.load_data)
-        datapath_frame.grid(column=0, row=0)
+        datapath_frame.grid(column=0, row=0, columnspan=2)
 
         self.plotconfig_frame = PlotConfigurationFrame(self)
-        self.plotconfig_frame.grid(column=0, row=1)
+        self.plotconfig_frame.grid(column=0, row=1, columnspan=2)
 
         self.plot_frame = PlotVisualizationFrame(self)
         self.plot_frame.grid(column=0, row=2, sticky=tk.W)
 
-        testbutton = ttk.Button(self, text='test', command=lambda: print(self.plotconfig_frame.get_axis_type()))
-        testbutton.grid(column=1, row=3, sticky=tk.E)
-
-        aaa = FitOverviewFrame(self)
-        aaa.grid(column=0, row=4)
+        self.aaa = FitOverviewFrame(self)
+        self.aaa.grid(column=1, row=2)
 
 
     def update_plot(self):
 
         # Update the plot in the PlotVisualiationFrame.
-
-        self.plot_frame.update_plot(self.config, self.df)
+        self.target_func = self.aaa.get_fit_function()
+        self.plot_frame.update_plot(self.config, self.df, self.target_func, self.aaa.get_all_params())
 
 
 if __name__ == '__main__':

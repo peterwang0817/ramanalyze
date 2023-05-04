@@ -15,9 +15,10 @@ from matplotlib.backends.backend_tkagg import (
 
 import numpy as np
 from classes import Series
-from curves import gaussian, lorentzian, voigt
+import curves as cv
 
 HC = 1239.841930092394
+options = {'padx': 5, 'pady': 5}
 
 class DataPathSelectionFrame(ttk.Frame):
 
@@ -28,7 +29,6 @@ class DataPathSelectionFrame(ttk.Frame):
         super().__init__(container)
 
         # field options
-        options = {'padx': 5, 'pady': 5}
 
         # Configure columns
         self.columnconfigure(index=0, weight=1)
@@ -86,7 +86,6 @@ class DataPathSelectionFrame(ttk.Frame):
     def get_background_path(self):
 
         return self.background_path.get()
-
 
 
 class PlotConfigurationFrame(ttk.Frame):
@@ -172,7 +171,7 @@ class PlotVisualizationFrame(tk.Frame):
         self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 
-    def update_plot(self, config, df):
+    def update_plot(self, config, df, target_func, guess):
         
         # Called when a variable is changed, or when instantiated. 'config' is expected to be the global config variable from the root window.
 
@@ -198,14 +197,67 @@ class PlotVisualizationFrame(tk.Frame):
             for i, v in enumerate(df[1:]):
                 self.axes.plot(x_axis, v[:,1])# - df[0][:,1])
                 foo = Series('1', x_axis, v[:,1], None, 'blue')
-                #bar = foo.fit(gaussian)
+                #bar = foo.fit(target_func, guess)
                 #self.axes.plot(x_axis, bar.ydata)
-
 
         self.figure_canvas.draw_idle()
         self.figure_canvas.flush_events()
         # I don't know how to use matplotlib
 
+
+class NewPlotVisualizationFrame(tk.Frame):
+
+    # Frame used to integrate matplotlib into tkinter.
+
+    def __init__(self, container, axis_type):
+
+        super().__init__(container)
+
+        # Create a figure
+        self.figure = Figure(figsize=(5, 4), dpi=120)
+        self.figure_canvas = FigureCanvasTkAgg(self.figure, self)
+        # Create navigation bar
+        NavigationToolbar2Tk(self.figure_canvas, self)
+        self.axes = self.figure.add_subplot()
+        # Set x axis
+        self.axis_type = axis_type
+        if self.axis_type == 'energy':
+            self.axes.set_xlabel('Energy (eV)')
+        elif self.axis_type == 'ramanshift':
+            self.axes.set_xlabel('Raman shift (cm⁻¹)')
+        else:
+            self.axes.set_xlabel('Wavelength (nm)')
+        # Set y axis
+        self.axes.set_ylabel("counts")
+        self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+
+    def update_plot(self, config, df):
+        
+        # Called when a variable is changed, or when instantiated. 'config' is expected to be the global config variable from the root window.
+
+        self.axes.clear()
+
+        # Set title
+        self.axes.set_title(config['plot_title'])
+        
+        if len(df) > 0:
+            
+            x_axis = df[0][:,0]
+            if self.axis_type == 'energy':
+                x_axis = np.reciprocal(x_axis) * HC
+            elif self.axis_type == 'ramanshift':
+                x_axis = 1E7 * (1.0 / float(config['exc_wavelength']) - np.reciprocal(x_axis))
+
+            for i, v in enumerate(df[1:]):
+                self.axes.plot(x_axis, v[:,1])# - df[0][:,1])
+                foo = Series(str(i), x_axis, v[:,1], None, 'blue')
+                #bar = foo.fit(gaussian)
+                #self.axes.plot(x_axis, bar.ydata)
+
+        self.figure_canvas.draw_idle()
+        self.figure_canvas.flush_events()
+        # I don't know how to use matplotlib
 
 class FitParameterFrame(tk.Frame):
 
@@ -213,28 +265,51 @@ class FitParameterFrame(tk.Frame):
 
         super().__init__(container)
 
+        self.name = StringVar()
+        self.type = StringVar()
         self.a = DoubleVar()
         self.b = DoubleVar()
         self.c = DoubleVar()
+        self.a.set(1)
+        self.b.set(1)
+        self.c.set(1)
+
+        curve_names = ('Gaussian', 'Lorentz')
+
+        name_label = ttk.Label(self, text='Name')
+        name_label.grid(column=0, row=0, padx=5)
+        name_entry = ttk.Entry(self, textvariable=self.name, width=10)
+        name_entry.grid(column=1, row=0)
+
+        type_entry = ttk.OptionMenu(self, self.type, curve_names[1], *curve_names)
+        type_entry.configure(width=8)
+        type_entry.grid(column=2, row=0)
 
         a_label = ttk.Label(self, text='a')
-        a_label.grid(column=0)
-        a_entry = ttk.Entry(self, textvariable=self.a)
-        a_entry.grid(column=1)
+        a_label.grid(column=3, row=0, padx=5)
+        a_entry = ttk.Entry(self, textvariable=self.a, width=6)
+        a_entry.grid(column=4, row=0)
 
         b_label = ttk.Label(self, text='b')
-        b_label.grid(column=2)
-        b_entry = ttk.Entry(self, textvariable=self.b)
-        b_entry.grid(column=3)
+        b_label.grid(column=5, row=0, padx=5)
+        b_entry = ttk.Entry(self, textvariable=self.b, width=6)
+        b_entry.grid(column=6, row=0)
 
         c_label = ttk.Label(self, text='c')
-        c_label.grid(column=4)
-        c_entry = ttk.Entry(self, textvariable=self.c)
-        c_entry.grid(column=5)
+        c_label.grid(column=7, row=0, padx=5)
+        c_entry = ttk.Entry(self, textvariable=self.c, width=6)
+        c_entry.grid(column=8, row=0)
+
+        remove_button = ttk.Button(self, text='Remove', command=self.commit_die)
+        remove_button.grid(column=9, row=0, padx=5)
+
+    def commit_die(self):
+
+        self.destroy()
 
     def get_params(self):
 
-        return (self.a.get(), self.b.get(), self.c.get())
+        return (self.name.get(), self.type.get(), self.a.get(), self.b.get(), self.c.get())
     
 
 class FitOverviewFrame(tk.Frame):
@@ -242,17 +317,48 @@ class FitOverviewFrame(tk.Frame):
     def __init__(self, container):
 
         super().__init__(container)
+        self.younglings = []
 
-        butt = ttk.Button(self, text='AAAA', command=self.on_pressed)
-        butt.pack()
+        add_button = ttk.Button(self, text='add new curve', command=self.on_pressed)
+        add_button.grid(column=0, row=0, sticky=tk.N)
 
-        self.test = ttk.Treeview(self, columns=('name', 'a', 'b', 'c'), show='headings')
-        self.test.heading('name', text='Name')
-        self.test.heading('a', text='a')
-        self.test.heading('b', text='b')
-        self.test.heading('c', text='c')
-        self.test.pack()
+        test = ttk.Button(self, text='bam', command=self.get_all_params)
+        test.grid(column=1, row=0)
+
 
     def on_pressed(self):
 
-        self.test.insert('', tk.END, values=('new', '0', '0', '0'))
+        new_curve = FitParameterFrame(self)
+        new_curve.grid(column=0, columnspan=2)
+
+
+    def get_all_params(self):
+        
+        all_params = []
+        #print('\nViewing children:\n')
+
+        for key in self.children:
+
+            if '!button' not in key:
+
+                #print(f'Key: {key}\nValue: {self.children[key].get_params()}')
+                for param in self.children[key].get_params()[2:]:
+                    all_params.append(param)
+
+        return all_params
+    
+    def get_fit_function(self):
+        
+        funcs = []
+
+        for key in self.children:
+
+            if '!button' not in key:
+
+                name = self.children[key].get_params()[1]
+                if name == 'Gaussian':
+                    funcs.append(cv.gaussian)
+                elif name == 'Lorentz':
+                    funcs.append(cv.lorentzian)
+
+        return lambda x, *args: sum(f(x, *args[3*i:3*i+3]) for i, f in enumerate(funcs))

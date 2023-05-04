@@ -1,5 +1,10 @@
 import numpy as np
 
+def sum(funcs):
+    # Returns a function constituting of all funcs provided. With n functions, this returned function
+    # will have 1 + 3*n parameters for scipy to fit.
+    return lambda x, *args: sum(f(x, *args[3*i:3*i+3]) for i, f in enumerate(funcs))
+
 def gaussian(x, a, b, c):
     # Gaussian distribution. Accepts the parameters a, b, c
     return (a / b) * np.exp(-((x - c) / b) ** 2)
